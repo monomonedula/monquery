@@ -7,15 +7,24 @@ Conv = Callable[[str], Tuple[Any, Optional[str]]]
 
 class Param(ABC):
     @abstractmethod
-    def name(self) -> str:
+    def name(self) -> str:  # pragma: no cover
         pass
 
     @abstractmethod
-    def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
+    def filter_from(
+        self, values: List[str]
+    ) -> Tuple[Dict[str, Any], Optional[str]]:  # pragma: no cover
         pass
 
 
 class ParamMultiValue(Param):
+    __slots__ = (
+        "_name",
+        "_target_field",
+        "_conv",
+        "_operator",
+    )
+
     def __init__(self, name: str, target_field: str, conv: Conv, operator: str):
         self._name: str = name
         self._target_field: str = target_field
@@ -34,8 +43,21 @@ class ParamMultiValue(Param):
             converted.append(c)
         return {self._target_field: {self._operator: converted}}, None
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(name={self._name!r}, "
+            f"target_field={self._target_field}, conv={self._conv}, operator={self._operator})"
+        )
+
 
 class ParamSingleValue(Param):
+    __slots__ = (
+        "_name",
+        "_target_field",
+        "_conv",
+        "_operator",
+    )
+
     def __init__(self, name: str, target_field: str, conv: Conv, operator: str):
         self._name: str = name
         self._target_field: str = target_field
@@ -51,8 +73,16 @@ class ParamSingleValue(Param):
             return {}, f"Error while parsing {self._name!r} param. {err}"
         return {self._target_field: {self._operator: converted}}, None
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(name={self._name!r}, "
+            f"target_field={self._target_field}, conv={self._conv}, operator={self._operator})"
+        )
 
-class ParamSimple(Param):
+
+class ParamEq(Param):
+    __slots__ = ("_origin",)
+
     def __init__(
         self,
         name: str,
@@ -82,12 +112,53 @@ class ParamSimple(Param):
     def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
         return self._origin.filter_from(values)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._origin!r})"
+
+
+class ParamNe(Param):
+    __slots__ = ("_origin",)
+
+    def __init__(
+        self,
+        name: str,
+        conv: Conv,
+        multi: bool = True,
+        target_field: Optional[str] = None,
+    ):
+        self._origin = (
+            ParamMultiValue(
+                name=name,
+                target_field=target_field or name,
+                conv=conv,
+                operator="$nin",
+            )
+            if multi
+            else ParamSingleValue(
+                name=name,
+                target_field=target_field or name,
+                conv=conv,
+                operator="$ne",
+            )
+        )
+
+    def name(self) -> str:
+        return self._origin.name()
+
+    def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
+        return self._origin.filter_from(values)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._origin!r})"
+
 
 class ParamMax(Param):
+    __slots__ = ("_origin",)
+
     def __init__(self, name: str, conv: Conv, target_field: str, lte: bool = False):
         self._origin: Param = ParamSingleValue(
             name=name,
-            target_field=target_field,
+            target_field=target_field or name,
             conv=conv,
             operator="$lte" if lte else "$lt",
         )
@@ -98,12 +169,17 @@ class ParamMax(Param):
     def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
         return self._origin.filter_from(values)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._origin!r})"
+
 
 class ParamMin(Param):
+    __slots__ = ("_origin",)
+
     def __init__(self, name: str, conv: Conv, target_field: str, gte: bool = False):
         self._origin: Param = ParamSingleValue(
             name=name,
-            target_field=target_field,
+            target_field=target_field or name,
             conv=conv,
             operator="$gte" if gte else "$gt",
         )
@@ -114,12 +190,16 @@ class ParamMin(Param):
     def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
         return self._origin.filter_from(values)
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._origin!r})"
+
 
 class Filter:
+    __slots__ = ("_fltrs", "_repr")
+
     def __init__(self, params: List[Param]):
-        self._fltrs: Dict[str, Param] = {}
-        for param in params:
-            self._fltrs[param.name()] = param
+        self._fltrs: Dict[str, Param] = {param.name(): param for param in params}
+        self._repr: str = f"{self.__class__.__name__}({sorted(self._fltrs.values(), key=lambda i: i.name())!r})"
 
     def from_query(
         self, q: Dict[str, List[str]]
@@ -133,3 +213,80 @@ class Filter:
                     return {}, err
                 combined_filter.update(fltr)
         return combined_filter, None
+
+    def __repr__(self):
+        return self._repr
+
+
+class Naming(ABC):
+    @abstractmethod
+    def name_for(self, base: str, typ: str) -> str:
+        pass
+
+
+class NamingBasic(Naming):
+    def __init__(
+        self,
+        pref_postf: Dict[str, Tuple[str, str]],
+    ):
+        self._pref_postf: Dict[str, Tuple[str, str]] = pref_postf
+
+    def name_for(self, base: str, typ: str) -> str:
+        prefix, postfix = self._pref_postf[typ]
+        return f"{prefix}{base}{postfix}"
+
+
+dollar_naming = NamingBasic(
+    {
+        "max": ("$lte-", ""),
+        "min": ("$gte-", ""),
+        "max-strict": ("$lt-", ""),
+        "min-strict": ("$gt-", ""),
+        "ne": ("$ne-", ""),
+    }
+)
+
+
+def params_basic(
+    base_name: str,
+    conv: Conv,
+    field: Optional[str] = None,
+    include_range_filters: bool = False,
+    include_equality_filter: bool = True,
+    naming: Naming = dollar_naming,
+) -> List[Param]:
+    field = field or base_name
+    return [
+        *(
+            [
+                ParamEq(base_name, conv, target_field=field),
+                ParamNe(naming.name_for(base_name, "ne"), conv, target_field=field),
+            ]
+            if include_equality_filter
+            else []
+        ),
+        *(
+            [
+                ParamMin(
+                    naming.name_for(base_name, "min-strict"), conv, target_field=field
+                ),
+                ParamMax(
+                    naming.name_for(base_name, "max-strict"), conv, target_field=field
+                ),
+                ParamMin(
+                    naming.name_for(base_name, "min"),
+                    conv,
+                    target_field=field,
+                    gte=True,
+                ),
+                ParamMax(
+                    naming.name_for(base_name, "max"),
+                    conv,
+                    target_field=field,
+                    lte=True,
+                ),
+            ]
+            if include_range_filters
+            else []
+        ),
+    ]

@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional, Tuple, Dict, List
 
@@ -10,7 +11,13 @@ class Pg:
     limit: Optional[int] = None
 
 
-class Pagination:
+class Pagination(ABC):
+    @abstractmethod
+    def from_query(self, q: Dict[str, List[str]]) -> Tuple[Pg, Optional[str]]:
+        pass
+
+
+class PaginationBasic(Pagination):
     def __init__(
         self,
         default_limit: Optional[int] = None,
@@ -47,3 +54,8 @@ class Pagination:
             return int(val), None
         except ValueError:
             return None, f"value of {key!r} must be integer"
+
+
+class PaginationDummy(Pagination):
+    def from_query(self, q: Dict[str, List[str]]) -> Tuple[Pg, Optional[str]]:
+        return Pg(), None

@@ -1,43 +1,29 @@
 from datetime import datetime
-from typing import Optional, Tuple
 from urllib.parse import parse_qs
 
-from monquery.fltr import Filter, ParamSimple, ParamMax, ParamMin
-
-
-def datetime_from_iso_str(s: str) -> Tuple[datetime, Optional[str]]:
-    try:
-        return datetime.fromisoformat(s), None
-    except ValueError as e:
-        return datetime.utcfromtimestamp(0), e.args[0]
-
-
-def int_from_str(s: str) -> Tuple[int, Optional[str]]:
-    try:
-        return int(s), None
-    except ValueError as e:
-        return 0, e.args[0]
-
-
-def string_identity(s: str) -> Tuple[str, Optional[str]]:
-    return s, None
-
-
-def datetime_utc_from_timestamp(s: str) -> Tuple[datetime, Optional[str]]:
-    try:
-        return datetime.utcfromtimestamp(float(s)), None
-    except ValueError as e:
-        return datetime.utcfromtimestamp(0), e.args[0]
+from monquery import (
+    Filter,
+    ParamEq,
+    ParamMax,
+    ParamMin,
+    PaginationBasic,
+    Pg,
+    Sorting,
+    SortingOption,
+    parse_string,
+    parse_int,
+    parse_datetime_iso,
+)
 
 
 def test_filter():
     f = Filter(
         [
-            ParamSimple("bar", string_identity),
-            ParamSimple("baz", int_from_str),
-            ParamMax("$lt-foo", datetime_from_iso_str, target_field="foo"),
-            ParamMin("$gt-foo", datetime_from_iso_str, target_field="foo"),
-            ParamSimple("foo", datetime_from_iso_str),
+            ParamEq("bar", parse_string),
+            ParamEq("baz", parse_int),
+            ParamMax("$lt-foo", parse_datetime_iso, target_field="foo"),
+            ParamMin("$gt-foo", parse_datetime_iso, target_field="foo"),
+            ParamEq("foo", parse_datetime_iso),
         ]
     )
     assert f.from_query(
@@ -50,3 +36,93 @@ def test_filter():
         },
         None,
     )
+    assert f.from_query(parse_qs("$lt-foo=incorrect-format&bar=hello there&baz=4")) == (
+        {},
+        "Error while parsing '$lt-foo' param. Invalid isoformat string: 'incorrect-format'",
+    )
+    assert (
+        repr(f) == "Filter([ParamMin(ParamSingleValue(name='$gt-foo', "
+        f"target_field=foo, conv={parse_datetime_iso!r}, operator=$gt)),"
+        " ParamMax(ParamSingleValue(name='$lt-foo', target_field=foo,"
+        f" conv={parse_datetime_iso!r}, operator=$lt)), "
+        "ParamEq(ParamMultiValue(name='bar', target_field=bar,"
+        f" conv={parse_string!r}, operator=$in)), "
+        "ParamEq(ParamMultiValue(name='baz', target_field=baz,"
+        f" conv={parse_int!r}, operator=$in)), "
+        "ParamEq(ParamMultiValue(name='foo', target_field=foo,"
+        f" conv={parse_datetime_iso!r}, operator=$in))])"
+    )
+
+
+def test_paginate():
+    assert PaginationBasic().from_query(
+        parse_qs("foo=bar&baz=55&skip=14&limit=32")
+    ) == (
+        Pg(skip=14, limit=32),
+        None,
+    )
+    assert PaginationBasic().from_query(parse_qs("foo=bar&baz=55&skip=14")) == (
+        Pg(skip=14, limit=None),
+        None,
+    )
+    assert PaginationBasic().from_query(parse_qs("foo=bar&baz=55&limit=32")) == (
+        Pg(skip=None, limit=32),
+        None,
+    )
+    assert PaginationBasic().from_query(parse_qs("foo=bar&baz=55&limit=foo")) == (
+        Pg(),
+        "value of 'limit' must be integer",
+    )
+    assert PaginationBasic().from_query(parse_qs("foo=bar&baz=55&skip=foo")) == (
+        Pg(),
+        "value of 'skip' must be integer",
+    )
+    assert PaginationBasic(default_limit=40).from_query(parse_qs("foo=bar&baz=55")) == (
+        Pg(limit=40),
+        None,
+    )
+    assert PaginationBasic(
+        skip_name="nobody_expects_the_spanish_inquisition", limit_name="some-other-name"
+    ).from_query(
+        parse_qs(
+            "foo=bar&baz=55&nobody_expects_the_spanish_inquisition=22&some-other-name=54"
+        )
+    ) == (
+        Pg(skip=22, limit=54),
+        None,
+    )
+
+
+def test_sort():
+    s = Sorting(
+        options=[
+            SortingOption(
+                "foo",
+            ),
+            SortingOption("-foo", direction=-1),
+            SortingOption("bar"),
+            SortingOption("-bar", direction=-1),
+            SortingOption("baz", direction=-1),
+        ]
+    )
+
+    assert s.from_query(parse_qs("sort=foo")) == (SortingOption("foo"), None)
+    assert s.from_query(parse_qs("sort=-bar")) == (
+        SortingOption("-bar", direction=-1),
+        None,
+    )
+    assert s.from_query(parse_qs("sort=-baz")) == (
+        None,
+        "unexpected sorting key: '-baz'",
+    )
+    assert s.from_query(parse_qs("whatever=baz")) == (
+        None,
+        None,
+    )
+    assert Sorting(options=[SortingOption("foo",),], key="xxx").from_query(
+        parse_qs("whatever=234&xxx=foo")
+    ) == (SortingOption("foo"), None)
+    assert Sorting(
+        options=[SortingOption("foo")],
+        default=SortingOption("haha"),
+    ).from_query(parse_qs("whatever=234")) == (SortingOption("haha"), None)
