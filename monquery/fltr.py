@@ -1,3 +1,4 @@
+import json
 from abc import abstractmethod, ABC
 from typing import List, Dict, Tuple, Optional, Any, Callable
 
@@ -192,6 +193,30 @@ class ParamMin(Param):
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._origin!r})"
+
+
+class ParamArray(Param):
+    def __init__(self, name: str, target_field: str, conv: Conv, operator: str):
+        self._name: str = name
+        self._target_field: str = target_field
+        self._conv: Conv = conv
+        self._operator: str = operator
+
+    def name(self) -> str:
+        return self._name
+
+    def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
+        converted = []
+        try:
+            values = json.loads(values[0])
+        except json.decoder.JSONDecodeError:
+            return {}, f"Error while parsing {self._name!r} param. (Array format error)"
+        for value in values:
+            c, err = self._conv(value)
+            if err:
+                return {}, f"Error while parsing {self._name!r} param. {err}"
+            converted.append(c)
+        return {self._target_field: {self._operator: converted}}, None
 
 
 class Filter:

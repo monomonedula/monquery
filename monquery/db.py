@@ -20,11 +20,6 @@ def pymongo_search_find(
     s, err = sorting.from_query(query)
     if err:
         return None, err
-    print(
-        f,
-        p,
-        s,
-    )
     cursor = (
         collection.find(f, projection) if projection is not None else collection.find(f)
     )
