@@ -1,3 +1,6 @@
+[![Build Status](https://app.travis-ci.com/monomonedula/monquery.svg?branch=master)](https://app.travis-ci.com/monomonedula/monquery)
+[![codecov](https://codecov.io/gh/monomonedula/monquery/branch/master/graph/badge.svg?token=lIa1a4PWtX)](https://codecov.io/gh/monomonedula/monquery)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ### Monquery
 
 A small toolkit enabling easier declarative approach to declaring
@@ -7,6 +10,10 @@ read API with MongoDB backend with rich filtering query parameters and minimum h
 It's framework-agnostic which means its role boils down to translating
 HTTP request query string into a valid MongoDB query.
 
+### Installation
+```shell
+pip install monquery
+```
 
 ### How it works
 
