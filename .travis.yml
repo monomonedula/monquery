@@ -9,7 +9,7 @@ services:
   - mongodb
 script:
   - black --check -v monquery/ test/
-  - mypy .
+  - mypy monquery
   - pytest --cov monquery/ --cov-report xml
 after_success:
   - bash <(curl -s https://codecov.io/bash)
