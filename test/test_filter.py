@@ -2,7 +2,7 @@ from datetime import datetime
 from urllib.parse import parse_qs
 
 from monquery import (
-    Filter,
+    FilterSimple,
     ParamEq,
     ParamMax,
     ParamMin,
@@ -17,7 +17,7 @@ from monquery import (
 
 
 def test_filter():
-    f = Filter(
+    f = FilterSimple(
         [
             ParamEq("bar", parse_string),
             ParamEq("baz", parse_int),
@@ -41,7 +41,7 @@ def test_filter():
         "Error while parsing '$lt-foo' param. Invalid isoformat string: 'incorrect-format'",
     )
     assert (
-        repr(f) == "Filter([ParamMin(ParamSingleValue(name='$gt-foo', "
+        repr(f) == "FilterSimple([ParamMin(ParamSingleValue(name='$gt-foo', "
         f"target_field=foo, conv={parse_datetime_iso!r}, operator=$gt)),"
         " ParamMax(ParamSingleValue(name='$lt-foo', target_field=foo,"
         f" conv={parse_datetime_iso!r}, operator=$lt)), "

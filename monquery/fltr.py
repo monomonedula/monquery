@@ -219,7 +219,15 @@ class ParamArray(Param):
         return {self._target_field: {self._operator: converted}}, None
 
 
-class Filter:
+class Filter(ABC):
+    @abstractmethod
+    def from_query(
+        self, q: Dict[str, List[str]]
+    ) -> Tuple[Dict[str, Any], Optional[str]]:
+        pass
+
+
+class FilterSimple(Filter):
     __slots__ = ("_fltrs", "_repr")
 
     def __init__(self, params: List[Param]):

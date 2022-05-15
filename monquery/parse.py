@@ -16,6 +16,13 @@ def parse_int(s: str) -> Tuple[int, Optional[str]]:
         return 0, e.args[0]
 
 
+def parse_float(s: str) -> Tuple[float, Optional[str]]:
+    try:
+        return float(s), None
+    except ValueError as e:
+        return 0, e.args[0]
+
+
 def parse_string(s: str) -> Tuple[str, Optional[str]]:
     return s, None
 
