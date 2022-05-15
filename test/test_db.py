@@ -88,16 +88,13 @@ def sorting():
     ],
 )
 def test_pymongo(coll, fltr, pagination, sorting, query, expected):
-    assert (
-        list(
-            pymongo_find(
-                coll,
-                fltr,
-                sorting,
-                pagination,
-                parse_qs(query),
-                projection={"_id": False},
-            )
-        )
-        == expected
+    cursor, err = pymongo_find(
+        coll,
+        fltr,
+        sorting,
+        pagination,
+        parse_qs(query),
+        projection={"_id": False},
     )
+    assert list(cursor) == expected
+    assert err is None
