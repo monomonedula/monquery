@@ -12,6 +12,10 @@ class SortingOption:
 
 
 class Sorting:
+    """
+    A general interface to define a pagination parser
+    """
+
     def __init__(
         self,
         options: List[SortingOption],

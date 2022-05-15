@@ -7,14 +7,25 @@ Conv = Callable[[str], Tuple[Any, Optional[str]]]
 
 
 class Param(ABC):
+    """
+    The general interface for filtering parameter definition
+    """
+
     @abstractmethod
     def name(self) -> str:  # pragma: no cover
+        """
+        :return: the param name
+        """
         pass
 
     @abstractmethod
     def filter_from(
         self, values: List[str]
     ) -> Tuple[Dict[str, Any], Optional[str]]:  # pragma: no cover
+        """
+        :param values: the values of the parameter from a query string
+        :return: MongoDB filter and error
+        """
         pass
 
 
@@ -220,10 +231,18 @@ class ParamArray(Param):
 
 
 class Filter(ABC):
+    """
+    An interface for query string to MongoDB filter translation
+    """
+
     @abstractmethod
     def from_query(
         self, q: Dict[str, List[str]]
     ) -> Tuple[Dict[str, Any], Optional[str]]:
+        """
+        :param q: a parsed query string
+        :return: MongoDB filter and error
+        """
         pass
 
 
@@ -252,6 +271,10 @@ class FilterSimple(Filter):
 
 
 class Naming(ABC):
+    """
+    A naming convention to derive parameter names for different types of filters
+    """
+
     @abstractmethod
     def name_for(self, base: str, typ: str) -> str:
         pass

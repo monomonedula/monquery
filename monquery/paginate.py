@@ -12,8 +12,16 @@ class Pg:
 
 
 class Pagination(ABC):
+    """
+    A general interface to define a pagination parser
+    """
+
     @abstractmethod
     def from_query(self, q: Dict[str, List[str]]) -> Tuple[Pg, Optional[str]]:
+        """
+        :param q: a parsed query string
+        :return: a paginator object and error
+        """
         pass
 
 
