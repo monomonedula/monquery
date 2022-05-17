@@ -58,9 +58,9 @@ from monquery import (
 Sorting(
     options=[
         SortingOption("foo"),
-        SortingOption("-foo", direction=-1),
+        SortingOption("-foo", field="foo", direction=-1),
         SortingOption("bar"),
-        SortingOption("-bar", direction=-1),
+        SortingOption("-bar", field="bar", direction=-1),
         SortingOption("baz", direction=-1),
     ]
 ).from_query(parse_qs("sort=foo"))
