@@ -30,9 +30,11 @@ def test_filter():
         parse_qs("$lt-foo=2022-05-06T20:35:14.991282&bar=hello there&baz=4")
     ) == (
         {
-            "bar": {"$in": ["hello there"]},
-            "baz": {"$in": [4]},
-            "foo": {"$lt": datetime(2022, 5, 6, 20, 35, 14, 991282)},
+            "$and": [
+                {"foo": {"$lt": datetime(2022, 5, 6, 20, 35, 14, 991282)}},
+                {"bar": {"$in": ["hello there"]}},
+                {"baz": {"$in": [4]}},
+            ]
         },
         None,
     )

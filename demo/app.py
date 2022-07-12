@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 import pymongo
 from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.applications import Starlette
-from starlette.responses import JSONResponse, RedirectResponse
+from starlette.responses import JSONResponse
 from starlette.requests import Request
 import uvicorn
 

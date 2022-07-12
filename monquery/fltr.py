@@ -1,5 +1,6 @@
 import json
 from abc import abstractmethod, ABC
+from math import comb
 from typing import List, Dict, Tuple, Optional, Any, Callable
 
 
@@ -256,15 +257,17 @@ class FilterSimple(Filter):
     def from_query(
         self, q: Dict[str, List[str]]
     ) -> Tuple[Dict[str, Any], Optional[str]]:
-        combined_filter = {}
+        combined_filter = []
         for name, values in q.items():
             proc = self._fltrs.get(name)
             if proc:
                 fltr, err = proc.filter_from(values)
                 if err:
                     return {}, err
-                combined_filter.update(fltr)
-        return combined_filter, None
+                combined_filter.append(fltr)
+        if combined_filter:
+            return {"$and": combined_filter}, None
+        return {}, None
 
     def __repr__(self):
         return self._repr

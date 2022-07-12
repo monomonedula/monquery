@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "monquery"
-version = "0.1.0"
+version = "0.2.0"
 description = "A library for HTTP query string to MongoDB queries translation"
 authors = ["monomonedula <valh@tuta.io>"]
 license = "MIT"
