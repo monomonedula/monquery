@@ -13,6 +13,7 @@ from monquery import (
     parse_string,
     parse_int,
     parse_datetime_iso,
+    ParamArray,
 )
 
 
@@ -128,3 +129,15 @@ def test_sort():
         options=[SortingOption("foo")],
         default=SortingOption("haha"),
     ).from_query(parse_qs("whatever=234")) == (SortingOption("haha"), None)
+
+
+def test_array_fltr():
+    out, err = FilterSimple(
+        [ParamArray("whatever", "metric", parse_int, "$in")]
+    ).from_query(
+        parse_qs(
+            "$lt-foo=incorrect-format&bar=hello there&baz=4&whatever=[1,5,6,78,44]"
+        )
+    )
+    assert err is None
+    assert out == {"$and": [{"metric": {"$in": [1, 5, 6, 78, 44]}}]}
