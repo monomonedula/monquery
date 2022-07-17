@@ -48,37 +48,6 @@ FilterSimple(
 #
 ```
 
-**Sorting**:
-
-```python
-from urllib.parse import parse_qs
-from monquery import (
-    FilterSimple, ParamEq, parse_int, parse_string, parse_datetime_iso, ParamMax, ParamMin
-)
-
-FilterSimple(
-    [
-        ParamEq("bar", parse_string, multi=False),
-        ParamEq("baz", parse_int, multi=False),
-        ParamMax("foo[max]", parse_datetime_iso, target_field="foo"),
-        ParamMin("foo[min]", parse_datetime_iso, target_field="foo"),
-    ]
-).from_query(
-    parse_qs("foo[max]=2022-05-06T20:35:14.991282&bar=hello there&baz=4")
-)
-
-#   returns the filter and error (which is None in this case meaning that everything is OK): 
-#   (
-#       {
-#           "bar": {"$eq": "hello there"},
-#           "baz": {"$eq": 4},
-#           "foo": {"$lt": datetime(2022, 5, 6, 20, 35, 14, 991282)},
-#       },
-#       None,
-#   )
-#
-```
-
 **Sorting:**
 ```python
 from urllib.parse import parse_qs
@@ -89,9 +58,9 @@ from monquery import (
 Sorting(
     options=[
         SortingOption("foo"),
-        SortingOption("-foo", direction=-1),
+        SortingOption("-foo", field="foo", direction=-1),
         SortingOption("bar"),
-        SortingOption("-bar", direction=-1),
+        SortingOption("-bar", field="bar", direction=-1),
         SortingOption("baz", direction=-1),
     ]
 ).from_query(parse_qs("sort=foo"))
