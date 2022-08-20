@@ -207,6 +207,13 @@ class ParamMin(Param):
 
 
 class ParamArray(Param):
+    __slots__ = (
+        "_name",
+        "_target_field",
+        "_conv",
+        "_operator",
+    )
+
     def __init__(self, name: str, target_field: str, conv: Conv, operator: str):
         self._name: str = name
         self._target_field: str = target_field
