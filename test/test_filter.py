@@ -14,6 +14,9 @@ from monquery import (
     parse_int,
     parse_datetime_iso,
     ParamArray,
+    ParamOf,
+    optional,
+    parse_bool,
 )
 
 
@@ -141,3 +144,31 @@ def test_array_fltr():
     )
     assert err is None
     assert out == {"$and": [{"metric": {"$in": [1, 5, 6, 78, 44]}}]}
+
+
+def test_param_of():
+    p = ParamOf("foo", parse_string, {"foo": {"whatever": "foo"}, "bar": {"xxx": 44}})
+    assert p.name() == "foo"
+    assert p.filter_from(["foo"]) == ({"whatever": "foo"}, None)
+    assert p.filter_from(["baz"]) == ({}, "Unexpected value: 'baz' of param 'foo'")
+    assert p.filter_from(["baz"]) == ({}, "Unexpected value: 'baz' of param 'foo'")
+    assert ParamOf(
+        "foo",
+        parse_string,
+        {"foo": {"whatever": "foo"}, "bar": {"xxx": 44}},
+        {"_id": 1234},
+    ).filter_from(["baz"]) == ({"_id": 1234}, None)
+
+
+def test_optional():
+    parse_optional_string = optional(parse_string, null_value="")
+    assert parse_optional_string("foo") == ("foo", None)
+    assert parse_optional_string("") == (None, None)
+
+
+def test_parse_bool():
+    assert parse_bool("1") == (True, None)
+    assert parse_bool("true") == (True, None)
+    assert parse_bool("foo") == (False, None)
+    assert parse_bool("0") == (False, None)
+    assert parse_bool("baz") == (False, None)

@@ -1,6 +1,5 @@
 import json
 from abc import abstractmethod, ABC
-from math import comb
 from typing import List, Dict, Tuple, Optional, Any, Callable
 
 
@@ -349,3 +348,37 @@ def params_basic(
             else []
         ),
     ]
+
+
+class ParamOf(Param):
+    __slots__ = (
+        "_name",
+        "_conv",
+        "_cases",
+        "_default_case",
+    )
+
+    def __init__(
+        self,
+        name: str,
+        conv: Conv,
+        cases: Dict[Any, Dict[str, Any]],
+        default_case: Optional[Dict[str, Any]] = None,
+    ):
+        self._name: str = name
+        self._conv: Conv = conv
+        self._cases: Dict[Any, Dict[str, Any]] = cases
+        self._default_case: Optional[Dict[str, Any]] = default_case
+
+    def name(self) -> str:
+        return self._name
+
+    def filter_from(self, values: List[str]) -> Tuple[Dict[str, Any], Optional[str]]:
+        converted, err = self._conv(values[0])
+        if err:
+            return {}, err
+        if converted in self._cases:
+            return self._cases[converted], None
+        if self._default_case is not None:
+            return self._default_case, None
+        return {}, f"Unexpected value: {values[0]!r} of param {self._name!r}"
